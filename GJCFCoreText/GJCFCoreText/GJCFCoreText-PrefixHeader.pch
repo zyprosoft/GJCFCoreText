@@ -1,0 +1,21 @@
+//
+//  GJCFCoreText-PrefixHeader.pch
+//  GJCFCoreText
+//
+//  Created by ZYVincent on 15/7/9.
+//  Copyright (c) 2015年 ZYProSoft. All rights reserved.
+//
+
+#ifndef __IPHONE_3_0
+#warning "This project uses features only available in iOS SDK 3.0 and later."
+#endif
+
+#ifdef __OBJC__
+
+#import <UIKit/UIKit.h>
+
+#import <Foundation/Foundation.h>
+
+#import "GJCFUitils.h"
+
+#endif
