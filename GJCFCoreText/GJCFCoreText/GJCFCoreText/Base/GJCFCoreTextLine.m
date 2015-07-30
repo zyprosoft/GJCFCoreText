@@ -3,7 +3,7 @@
 //  GJCommonFoundation
 //
 //  Created by ZYVincent on 14-9-21.
-//  Copyright (c) 2014年 ZYProSoft. All rights reserved.
+//  Copyright (c) 2014年 ganji.com. All rights reserved.
 //
 
 #import "GJCFCoreTextLine.h"
@@ -91,53 +91,22 @@
 - (CGRect)rectForStringRange:(NSRange)range
 {
     CFRange stringRange = CTLineGetStringRange(_line);
-    
     NSRange convertStringRange = NSMakeRange(stringRange.location, stringRange.length);
-    
     CGRect resultRect = CGRectZero;
-    resultRect.origin.y = _origin.y-4;
-    
-    //结束字符的位置在字符串中,那么这个字符串也会在这一行中
-    BOOL stringJustEndLocationInStringRange = NSLocationInRange(range.location+range.length, convertStringRange) && range.location < convertStringRange.location;
-    
-    if (NSLocationInRange(range.location, convertStringRange) || stringJustEndLocationInStringRange) {
-        
+    resultRect.origin.y = _origin.y - 4;
+    NSRange intersectionRange = NSIntersectionRange(range,convertStringRange);
+    if (intersectionRange.length > 0) {
         CGFloat offset = 0.f;
-        CTLineGetOffsetForStringIndex(_line, range.location, &offset);
-        
-        //如果是结束字符在这行中
-        if (stringJustEndLocationInStringRange) {
-            CTLineGetOffsetForStringIndex(_line, convertStringRange.location, &offset);
-        }
-        
+        CTLineGetOffsetForStringIndex(_line, intersectionRange.location, &offset);
         resultRect.origin.x = offset;
-        
         CGFloat width = 0.f;
-        
-        //获取结束位置
-        if (NSLocationInRange(range.length+range.location, convertStringRange)) {
-            
-            CGFloat endOffset = 0.f;
-            
-            CTLineGetOffsetForStringIndex(_line, range.location+range.length, &endOffset);
-                        
-            width = endOffset - offset;
-            
-        }else{
-            
-            CGFloat endOffset = 0.f;
-            CTLineGetOffsetForStringIndex(_line, stringRange.location+stringRange.length, &endOffset);
-            
-            width = endOffset - offset;
-
-        }
-        
+        CGFloat endOffset = 0.f;
+        CTLineGetOffsetForStringIndex(_line, intersectionRange.location + intersectionRange.length, &endOffset);
+        width = endOffset - offset;
         resultRect.size.width = width;
         resultRect.size.height = _lineHeight;
-        
     }
-    
-    return resultRect.size.width == 0? CGRectZero:resultRect;
+    return resultRect.size.width == 0 ? CGRectZero : resultRect;
 }
 
 @end

@@ -3,7 +3,7 @@
 //  GJCommonFoundation
 //
 //  Created by ZYVincent on 14-9-21.
-//  Copyright (c) 2014年 ZYProSoft. All rights reserved.
+//  Copyright (c) 2014年 ganji.com. All rights reserved.
 //
 
 #import "GJCFCoreTextContentView.h"
@@ -175,20 +175,38 @@
     if (self.ctFrame.linesArray.count > self.numberOfLines && self.numberOfLines != 0) {
         
         //获取限制行数的多态字符串
-        if (!self.limitLineAttributedString) {
-            
-            NSString *limitString = [self.ctFrame getLimitNumberOfLineText:self.numberOfLines];
-            NSRange limitRange = [self.ctFrame getLimitNumberOfLineRange:self.numberOfLines];
-            NSRange longestRange = NSMakeRange(0, 0);
-            
-            NSDictionary *attributesDict = [self.contentAttributedString attributesAtIndex:limitRange.location longestEffectiveRange:&longestRange inRange:limitRange];
-            
-            NSAttributedString *resetContentString = [[NSAttributedString alloc]initWithString:limitString attributes:attributesDict];
-            
-            self.limitLineAttributedString = resetContentString;
-        }
+        NSString *limitString = [self.ctFrame getLimitNumberOfLineText:self.numberOfLines];
+        NSRange limitRange = [self.ctFrame getLimitNumberOfLineRange:self.numberOfLines];
+        NSRange longestRange = NSMakeRange(0, 0);
         
-        self.contentAttributedString = self.limitLineAttributedString;
+        NSDictionary *attributesDict = [self.contentAttributedString attributesAtIndex:limitRange.length-1 longestEffectiveRange:&longestRange inRange:limitRange];
+
+        /* 遍历所有关键字range，找到在范围内的range */
+        NSMutableAttributedString *multiLimitString = [[NSMutableAttributedString alloc]initWithString:limitString attributes:attributesDict];
+        
+        [self.keywordRangeDict enumerateKeysAndObjectsUsingBlock:^(NSString *keyword, NSArray  *rangeArray, BOOL *dictStop) {
+            
+            for (NSValue *rangeItem in rangeArray) {
+                
+                NSRange keywordRange = [rangeItem rangeValue];
+                
+                NSRange keywordLongestRange;
+                
+                if ((keywordRange.location + keywordRange.length) > multiLimitString.length) {
+                    keywordRange.length = multiLimitString.length - keywordRange.location;
+                }
+                
+                NSDictionary *attributesDict = [self.contentAttributedString attributesAtIndex:keywordRange.location longestEffectiveRange:&keywordLongestRange inRange:keywordRange];
+                
+                [multiLimitString addAttributes:attributesDict range:keywordRange];
+
+            }
+            
+        }];
+        
+        NSAttributedString *resetContentString = multiLimitString;
+        
+        _contentAttributedString = resetContentString;
         
         self.isNeedUpdateCTFrame = YES;
         
@@ -286,18 +304,22 @@
     
     /* 如果支持整体点击事件 */
     if (!isTapOnKeyword && self.enableTap) {
-        self.selected = YES;
+        self.selected = NO;
     }
     
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    
+    [self.stateRectArray removeAllObjects];
+    [self setNeedsDisplay];
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    [self.stateRectArray removeAllObjects];
+    [self setNeedsDisplay];
+    
     //停止长按计时
     if (self.isSupportLongPressAction) {
         [self.longPressTimer invalidate];
@@ -351,7 +373,7 @@
                     }
                     
                     /* 让点击效果有持续时间 */
-                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                         //清除点击背景
                         [self.stateRectArray removeAllObjects];
                         [self setNeedsDisplay];
@@ -922,7 +944,7 @@
         NSRange longestRange = NSMakeRange(0, 0);
         
         NSDictionary *attributesDict = [ctFrame.contentAttributedString attributesAtIndex:limitRange.location longestEffectiveRange:&longestRange inRange:limitRange];
-        
+                
         NSAttributedString *resetContentString = [[NSAttributedString alloc]initWithString:limitString attributes:attributesDict];
         
         attributedString = resetContentString;
